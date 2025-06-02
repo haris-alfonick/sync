@@ -40,14 +40,23 @@ export async function POST(req: NextRequest) {
     .update(rawBody, 'utf8')
     .digest('base64');
   
-  console.log('Computed signature:', computedSignature);
-  console.log('Secret used for computation:', secret);
+  console.log('Signature verification details:', {
+    receivedSignature: signatureHeader,
+    computedSignature: computedSignature,
+    secretLength: secret.length,
+    rawBodyLength: rawBody.length,
+    contentType: req.headers.get('content-type'),
+    webhookId: req.headers.get('x-wc-webhook-id'),
+    webhookTopic: req.headers.get('x-wc-webhook-topic'),
+    webhookEvent: req.headers.get('x-wc-webhook-event')
+  });
 
   if (!signatureHeader) {
     console.error('No signature header received. Please check WooCommerce webhook configuration.');
     return NextResponse.json({ 
       error: 'Missing webhook signature header',
-      details: 'The X-WC-Webhook-Signature header was not received. Please check your WooCommerce webhook configuration.'
+      details: 'The X-WC-Webhook-Signature header was not received. Please check your WooCommerce webhook configuration.',
+      headers: headers
     }, { status: 401 });
   }
 
@@ -56,11 +65,19 @@ export async function POST(req: NextRequest) {
       received: signatureHeader,
       computed: computedSignature,
       secretLength: secret.length,
-      headers: headers
+      headers: headers,
+      rawBody: rawBody
     });
     return NextResponse.json({ 
       error: 'Invalid webhook signature',
-      details: 'The webhook signature does not match. Please verify your webhook secret in both WooCommerce and your environment variables.'
+      details: 'The webhook signature does not match. Please verify your webhook secret in both WooCommerce and your environment variables.',
+      headers: headers,
+      debug: {
+        receivedSignature: signatureHeader,
+        computedSignature: computedSignature,
+        secretLength: secret.length,
+        rawBodyLength: rawBody.length
+      }
     }, { status: 401 });
   }
 
