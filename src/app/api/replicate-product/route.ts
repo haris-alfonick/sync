@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
     wcApiUrl
   });
 
-  const signatureHeader = req.headers.get('x-wc-webhook-signature');
+  // Get signature header case-insensitively
+  const signatureHeader = req.headers.get('x-wc-webhook-signature') || 
+                         req.headers.get('X-WC-Webhook-Signature');
   console.log('Received signature header:', signatureHeader);
   
   const rawBody = await req.text();
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     console.error('No signature header received. Please check WooCommerce webhook configuration.');
     return NextResponse.json({ 
       error: 'Missing webhook signature header',
-      details: 'The x-wc-webhook-signature header was not received. Please check your WooCommerce webhook configuration.'
+      details: 'The X-WC-Webhook-Signature header was not received. Please check your WooCommerce webhook configuration.'
     }, { status: 401 });
   }
 
@@ -53,7 +55,8 @@ export async function POST(req: NextRequest) {
     console.error('Signature mismatch:', {
       received: signatureHeader,
       computed: computedSignature,
-      secretLength: secret.length
+      secretLength: secret.length,
+      headers: headers
     });
     return NextResponse.json({ 
       error: 'Invalid webhook signature',
