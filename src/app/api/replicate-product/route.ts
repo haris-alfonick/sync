@@ -4,9 +4,21 @@ import axios, { AxiosError } from 'axios';
 
 async function uploadImageToWooCommerce(imageUrl: string, consumerKey: string, consumerSecret: string, wcApiUrl: string) {
   try {
+    console.log('Attempting to download image from:', imageUrl);
+    
     // Download the image
-    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageResponse = await axios.get(imageUrl, { 
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
     const imageBuffer = Buffer.from(imageResponse.data);
+    
+    // Construct the media endpoint URL
+    const baseUrl = wcApiUrl.split('/wp-json/')[0];
+    const mediaEndpoint = `${baseUrl}/wp-json/wp/v2/media`;
+    console.log('Uploading to media endpoint:', mediaEndpoint);
     
     // Create form data for the upload
     const formData = new FormData();
@@ -14,7 +26,7 @@ async function uploadImageToWooCommerce(imageUrl: string, consumerKey: string, c
     
     // Upload to WooCommerce media library
     const uploadResponse = await axios.post(
-      `${wcApiUrl.replace('/products', '/media')}`,
+      mediaEndpoint,
       formData,
       {
         auth: {
@@ -27,9 +39,25 @@ async function uploadImageToWooCommerce(imageUrl: string, consumerKey: string, c
       }
     );
     
+    console.log('Successfully uploaded image:', {
+      status: uploadResponse.status,
+      data: uploadResponse.data
+    });
+    
     return uploadResponse.data.id;
   } catch (error) {
-    console.error('Failed to upload image:', error);
+    const axiosError = error as AxiosError;
+    console.error('Failed to upload image:', {
+      imageUrl,
+      error: axiosError.message,
+      response: axiosError.response?.data,
+      status: axiosError.response?.status,
+      config: {
+        url: axiosError.config?.url,
+        method: axiosError.config?.method,
+        headers: axiosError.config?.headers
+      }
+    });
     return null;
   }
 }
@@ -144,6 +172,7 @@ export async function POST(req: NextRequest) {
     if (product.images && Array.isArray(product.images)) {
       for (const image of product.images) {
         if (image.src) {
+          console.log('Processing image:', image.src);
           const newImageId = await uploadImageToWooCommerce(
             image.src,
             consumerKey,
@@ -152,6 +181,9 @@ export async function POST(req: NextRequest) {
           );
           if (newImageId) {
             processedImages.push({ id: newImageId });
+            console.log('Successfully processed image, new ID:', newImageId);
+          } else {
+            console.warn('Failed to process image:', image.src);
           }
         }
       }
@@ -174,6 +206,11 @@ export async function POST(req: NextRequest) {
       meta_data: product.meta_data
     };
 
+    // If no images were successfully processed, try to create the product without images
+    if (processedImages.length === 0) {
+      console.warn('No images were successfully processed, creating product without images');
+    }
+
     console.log('Sending product data:', JSON.stringify(cleanProduct, null, 2));
 
     const response = await axios.post(wcApiUrl, cleanProduct, {
@@ -194,7 +231,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       productId: response.data.id,
-      message: 'Product created successfully'
+      message: 'Product created successfully',
+      imagesProcessed: processedImages.length
     });
   } catch (error) {
     const axiosError = error as AxiosError;
