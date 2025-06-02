@@ -90,10 +90,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // Optional: map or transform the product before forwarding
+  let cleanProduct;
   try {
     console.log('Attempting to forward product to:', wcApiUrl);
-    const response = await axios.post(wcApiUrl, product, {
+    
+    // Clean up the product data before sending
+    cleanProduct = {
+      name: product.name,
+      type: product.type,
+      status: product.status,
+      description: product.description,
+      short_description: product.short_description,
+      price: product.price,
+      regular_price: product.regular_price,
+      sale_price: product.sale_price,
+      categories: product.categories,
+      images: product.images,
+      attributes: product.attributes,
+      variations: product.variations,
+      meta_data: product.meta_data
+    };
+
+    console.log('Sending product data:', JSON.stringify(cleanProduct, null, 2));
+
+    const response = await axios.post(wcApiUrl, cleanProduct, {
       auth: {
         username: consumerKey,
         password: consumerSecret,
@@ -103,19 +123,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('Successfully forwarded product, response:', response.status);
-    return NextResponse.json({ success: true, productId: response.data.id });
+    console.log('Successfully created product, response:', {
+      status: response.status,
+      data: response.data
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      productId: response.data.id,
+      message: 'Product created successfully'
+    });
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error('Failed to replicate product:', {
       message: axiosError.message,
       response: axiosError.response?.data,
-      status: axiosError.response?.status
+      status: axiosError.response?.status,
+      requestData: cleanProduct
     });
     return NextResponse.json({ 
       error: 'Failed to replicate product', 
       details: axiosError.message,
-      response: axiosError.response?.data 
+      response: axiosError.response?.data,
+      requestData: cleanProduct
     }, { status: 500 });
   }
 }
