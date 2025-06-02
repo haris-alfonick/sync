@@ -2,6 +2,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import axios, { AxiosError } from 'axios';
 
+async function uploadImageToWooCommerce(imageUrl: string, consumerKey: string, consumerSecret: string, wcApiUrl: string) {
+  try {
+    // Download the image
+    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBuffer = Buffer.from(imageResponse.data);
+    
+    // Create form data for the upload
+    const formData = new FormData();
+    formData.append('file', new Blob([imageBuffer]), 'image.jpg');
+    
+    // Upload to WooCommerce media library
+    const uploadResponse = await axios.post(
+      `${wcApiUrl.replace('/products', '/media')}`,
+      formData,
+      {
+        auth: {
+          username: consumerKey,
+          password: consumerSecret,
+        },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    return uploadResponse.data.id;
+  } catch (error) {
+    console.error('Failed to upload image:', error);
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   console.log('Webhook received at:', new Date().toISOString());
   
@@ -105,8 +137,26 @@ export async function POST(req: NextRequest) {
 
   let cleanProduct;
   try {
-    console.log('Attempting to forward product to:', wcApiUrl);
+    console.log('Processing product images...');
     
+    // Process images first
+    const processedImages = [];
+    if (product.images && Array.isArray(product.images)) {
+      for (const image of product.images) {
+        if (image.src) {
+          const newImageId = await uploadImageToWooCommerce(
+            image.src,
+            consumerKey,
+            consumerSecret,
+            wcApiUrl
+          );
+          if (newImageId) {
+            processedImages.push({ id: newImageId });
+          }
+        }
+      }
+    }
+
     // Clean up the product data before sending
     cleanProduct = {
       name: product.name,
@@ -118,7 +168,7 @@ export async function POST(req: NextRequest) {
       regular_price: product.regular_price,
       sale_price: product.sale_price,
       categories: product.categories,
-      images: product.images,
+      images: processedImages,
       attributes: product.attributes,
       variations: product.variations,
       meta_data: product.meta_data
