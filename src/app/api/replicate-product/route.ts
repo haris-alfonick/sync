@@ -25,6 +25,19 @@ export async function POST(req: NextRequest) {
     wcApiUrl
   });
 
+  // Check if this is a test request
+  const contentType = req.headers.get('content-type');
+  const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+  
+  if (contentType === 'application/x-www-form-urlencoded' && contentLength < 100) {
+    console.log('Received test request');
+    return NextResponse.json({ 
+      status: 'ok',
+      message: 'Test request received successfully',
+      headers: headers
+    });
+  }
+
   // Get signature header case-insensitively
   const signatureHeader = req.headers.get('x-wc-webhook-signature') || 
                          req.headers.get('X-WC-Webhook-Signature');
