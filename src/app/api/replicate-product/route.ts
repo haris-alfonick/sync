@@ -5,6 +5,13 @@ import axios, { AxiosError } from 'axios';
 export async function POST(req: NextRequest) {
   console.log('Webhook received at:', new Date().toISOString());
   
+  // Log all headers for debugging
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  console.log('All received headers:', headers);
+  
   const secret = process.env.WEBHOOK_SECRET!;
   const consumerKey = process.env.WC2_CONSUMER_KEY!;
   const consumerSecret = process.env.WC2_CONSUMER_SECRET!;
@@ -22,6 +29,7 @@ export async function POST(req: NextRequest) {
   console.log('Received signature header:', signatureHeader);
   
   const rawBody = await req.text();
+  console.log('Received raw body:', rawBody);
   console.log('Received raw body length:', rawBody.length);
 
   // Verify webhook signature
@@ -31,13 +39,26 @@ export async function POST(req: NextRequest) {
     .digest('base64');
   
   console.log('Computed signature:', computedSignature);
+  console.log('Secret used for computation:', secret);
+
+  if (!signatureHeader) {
+    console.error('No signature header received. Please check WooCommerce webhook configuration.');
+    return NextResponse.json({ 
+      error: 'Missing webhook signature header',
+      details: 'The x-wc-webhook-signature header was not received. Please check your WooCommerce webhook configuration.'
+    }, { status: 401 });
+  }
 
   if (signatureHeader !== computedSignature) {
     console.error('Signature mismatch:', {
       received: signatureHeader,
-      computed: computedSignature
+      computed: computedSignature,
+      secretLength: secret.length
     });
-    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+    return NextResponse.json({ 
+      error: 'Invalid webhook signature',
+      details: 'The webhook signature does not match. Please verify your webhook secret in both WooCommerce and your environment variables.'
+    }, { status: 401 });
   }
 
   let product;
