@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 export async function POST(req: NextRequest) {
   console.log('Webhook received at:', new Date().toISOString());
@@ -64,16 +64,17 @@ export async function POST(req: NextRequest) {
 
     console.log('Successfully forwarded product, response:', response.status);
     return NextResponse.json({ success: true, productId: response.data.id });
-  } catch (error: any) {
+  } catch (error) {
+    const axiosError = error as AxiosError;
     console.error('Failed to replicate product:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
+      message: axiosError.message,
+      response: axiosError.response?.data,
+      status: axiosError.response?.status
     });
     return NextResponse.json({ 
       error: 'Failed to replicate product', 
-      details: error.message,
-      response: error.response?.data 
+      details: axiosError.message,
+      response: axiosError.response?.data 
     }, { status: 500 });
   }
 }
