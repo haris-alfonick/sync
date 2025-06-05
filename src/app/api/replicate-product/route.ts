@@ -189,6 +189,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const processedImagesSrc = product.images.map((image: { src: string; }) => image.src);
+
     // Clean up the product data before sending
     cleanProduct = {
       name: product.name,
@@ -200,14 +202,15 @@ export async function POST(req: NextRequest) {
       regular_price: product.regular_price,
       sale_price: product.sale_price,
       categories: product.categories,
-      images: processedImages,
+      images: processedImagesSrc,
+      variations: true,
       attributes: product.attributes,
-      variations: product.variations,
+      // variations: product.variations,
       meta_data: product.meta_data
     };
 
     // If no images were successfully processed, try to create the product without images
-    if (processedImages.length === 0) {
+    if (processedImagesSrc.length === 0) {
       console.warn('No images were successfully processed, creating product without images');
     }
 
