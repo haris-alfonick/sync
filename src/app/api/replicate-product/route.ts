@@ -87,7 +87,7 @@ if (!sizeAttribute) {
 
   for (const size of sizeAttribute.options) {
     let regularPrice = baseRegularPrice;
-    let salePrice = baseSalePrice;
+    const salePrice = baseSalePrice;
 
     // Add +40 if size includes "custom"
     if (size.toLowerCase().includes('custom')) {
