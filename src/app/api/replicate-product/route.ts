@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import axios, { AxiosError } from 'axios';
 
+interface WCProductAttribute {
+  id: number;
+  name: string;
+  slug: string;
+  position?: number;
+  visible?: boolean;
+  variation?: boolean;
+  options: string[];
+}
+
 export async function POST(req: NextRequest) {
   console.log('Webhook received at:', new Date().toISOString());
 
@@ -41,7 +51,7 @@ export async function POST(req: NextRequest) {
     short_description: product.short_description,
     categories: product.categories,
     images: processedImagesSrc,
-    attributes: product.attributes?.map((attr: any) => ({
+    attributes: (product.attributes as WCProductAttribute[])?.map(attr => ({
       id: attr.id,
       name: attr.name,
       slug: attr.slug,
@@ -61,7 +71,7 @@ export async function POST(req: NextRequest) {
     });
 
     const productId = productResponse.data.id;
-    const sizeAttribute = product.attributes?.find((attr: any) => attr.name.toLowerCase() === 'size');
+    const sizeAttribute = (product.attributes as WCProductAttribute[])?.find(attr => attr.name.toLowerCase() === 'size');
 
     if (!sizeAttribute) {
       console.warn('No Size attribute found, skipping variation creation.');
