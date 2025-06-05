@@ -85,8 +85,9 @@ if (!sizeAttribute) {
     let regularPrice = baseRegularPrice; // 205
     let salePrice = basePrice;           // 165
 
-    if (['custom-size-40', 'custom-size-40-2'].includes(size.toLowerCase())) {
-      regularPrice += 40; // 205 + 40 = 245
+    // Check if the slug is a custom size
+    if (['custom-size-40', 'custom-size-40-2'].includes(size)) {
+      regularPrice += 40;         // 205 + 40 = 245
       salePrice = baseRegularPrice; // 205
     }
 
