@@ -73,28 +73,49 @@ export async function POST(req: NextRequest) {
     const productId = productResponse.data.id;
     const sizeAttribute = (product.attributes as WCProductAttribute[])?.find(attr => attr.name.toLowerCase() === 'size');
 
-    if (!sizeAttribute) {
-      console.warn('No Size attribute found, skipping variation creation.');
-    } else {
-      const variationsEndpoint = `${wcApiUrl}/${productId}/variations`;
+if (!sizeAttribute) {
+  console.warn('No Size attribute found, skipping variation creation.');
+} else {
+  const variationsEndpoint = `${wcApiUrl}/${productId}/variations`;
 
-      // 2. Create each variation
-      for (const size of sizeAttribute.options) {
-        await axios.post(variationsEndpoint, {
-          regular_price: product.regular_price ?? '0',
-          attributes: [
-            {
-              id: sizeAttribute.id,
-              option: size
-            }
-          ]
-        }, {
-          auth: { username: consumerKey, password: consumerSecret },
-          headers: { 'Content-Type': 'application/json' },
-        });
-        console.log(`Variation created for size: ${size}`);
-      }
+  const baseRegularPrice =
+    product.regular_price && product.regular_price.trim() !== ''
+      ? parseFloat(product.regular_price)
+      : parseFloat(product.price);
+
+  const baseSalePrice = parseFloat(product.price);
+
+  for (const size of sizeAttribute.options) {
+    let regularPrice = baseRegularPrice;
+    let salePrice = baseSalePrice;
+
+    // Add +40 if size includes "custom"
+    if (size.toLowerCase().includes('custom')) {
+      regularPrice += 40;
     }
+
+    const variationData = {
+      regular_price: regularPrice.toFixed(2),
+      sale_price: salePrice.toFixed(2),
+      attributes: [
+        {
+          id: sizeAttribute.id,
+          option: size,
+        },
+      ],
+    };
+
+    try {
+      const variationResponse = await axios.post(variationsEndpoint, variationData, {
+        auth: { username: consumerKey, password: consumerSecret },
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log(`✅ Variation created for size: ${size}`, variationResponse.data.id);
+    } catch (variationError) {
+      console.error(`❌ Failed to create variation for size "${size}":`, variationError);
+    }
+  }
+}   
 
     return NextResponse.json({ success: true, productId, message: 'Product and variations created' });
   } catch (error) {
