@@ -189,10 +189,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const processedImagesSrc = product.images.map((image: { src: string; }) => image.src);
+    const processedImagesSrc = product.images.map((image: { src: string }) => ({ src: image.src }));
 
     // Clean up the product data before sending
-    cleanProduct = {
+    const cleanProduct = {
       name: product.name,
       type: product.type,
       status: product.status,
@@ -202,10 +202,9 @@ export async function POST(req: NextRequest) {
       regular_price: product.regular_price,
       sale_price: product.sale_price,
       categories: product.categories,
-      images: processedImagesSrc,
+      images: processedImagesSrc, // ✅ now properly formatted
       variations: true,
       attributes: product.attributes,
-      // variations: product.variations,
       meta_data: product.meta_data
     };
 
