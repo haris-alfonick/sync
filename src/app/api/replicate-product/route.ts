@@ -78,43 +78,42 @@ if (!sizeAttribute) {
 } else {
   const variationsEndpoint = `${wcApiUrl}/${productId}/variations`;
 
-  const baseRegularPrice =
-    product.regular_price && product.regular_price.trim() !== ''
-      ? parseFloat(product.regular_price)
-      : parseFloat(product.price);
+  const basePrice = parseFloat(product.price);
+const baseRegularPrice = product.regular_price && product.regular_price.trim() !== ''
+  ? parseFloat(product.regular_price)
+  : basePrice + 40; // Add +40 if no regular_price is set
 
-  const baseSalePrice = parseFloat(product.price);
+for (const size of sizeAttribute.options) {
+  let regularPrice = baseRegularPrice;
+  let salePrice = basePrice;
 
-  for (const size of sizeAttribute.options) {
-    let regularPrice = baseRegularPrice;
-    const salePrice = baseSalePrice;
-
-    // Add +40 if size includes "custom"
-    if (size.toLowerCase().includes('custom')) {
-      regularPrice += 40;
-    }
-
-    const variationData = {
-      regular_price: regularPrice.toFixed(2),
-      sale_price: salePrice.toFixed(2),
-      attributes: [
-        {
-          id: sizeAttribute.id,
-          option: size,
-        },
-      ],
-    };
-
-    try {
-      const variationResponse = await axios.post(variationsEndpoint, variationData, {
-        auth: { username: consumerKey, password: consumerSecret },
-        headers: { 'Content-Type': 'application/json' },
-      });
-      console.log(`✅ Variation created for size: ${size}`, variationResponse.data.id);
-    } catch (variationError) {
-      console.error(`❌ Failed to create variation for size "${size}":`, variationError);
-    }
+  if (['custom-size-40', 'custom-size-40-2'].includes(size.toLowerCase())) {
+    regularPrice += 40;
+    salePrice = baseRegularPrice;
   }
+
+  const variationData = {
+    regular_price: regularPrice.toFixed(2),
+    sale_price: salePrice.toFixed(2),
+    attributes: [
+      {
+        id: sizeAttribute.id,
+        option: size
+      }
+    ]
+  };
+
+  try {
+    const variationResponse = await axios.post(variationsEndpoint, variationData, {
+      auth: { username: consumerKey, password: consumerSecret },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log(`✅ Variation created for size: ${size}`, variationResponse.data.id);
+  } catch (variationError) {
+    console.error(`❌ Failed to create variation for size "${size}":`, variationError);
+  }
+}
+
 }   
 
     return NextResponse.json({ success: true, productId, message: 'Product and variations created' });
