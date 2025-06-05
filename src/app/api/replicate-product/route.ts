@@ -79,39 +79,40 @@ if (!sizeAttribute) {
   const variationsEndpoint = `${wcApiUrl}/${productId}/variations`;
 
   const basePrice = parseFloat(product.price); // e.g., 165
-  const baseRegularPrice = basePrice + 40;     // e.g., 205
+const baseRegularPrice = basePrice + 40;     // e.g., 205
 
-  for (const size of sizeAttribute.options) {
-    let regularPrice = baseRegularPrice; // 205
-    let salePrice = basePrice;           // 165
+for (const size of sizeAttribute.options) {
+  let regularPrice = baseRegularPrice; // 205
+  let salePrice = basePrice;           // 165
 
-    // Check if the slug is a custom size
-    if (['custom-size-40', 'custom-size-40-2'].includes(size)) {
-      regularPrice += 40;         // 205 + 40 = 245
-      salePrice = baseRegularPrice; // 205
-    }
-
-    const variationData = {
-      regular_price: regularPrice.toFixed(2),
-      sale_price: salePrice.toFixed(2),
-      attributes: [
-        {
-          id: sizeAttribute.id,
-          option: size
-        }
-      ]
-    };
-
-    try {
-      const variationResponse = await axios.post(variationsEndpoint, variationData, {
-        auth: { username: consumerKey, password: consumerSecret },
-        headers: { 'Content-Type': 'application/json' },
-      });
-      console.log(`✅ Variation created for size: ${size}`, variationResponse.data.id);
-    } catch (variationError) {
-      console.error(`❌ Failed to create variation for size "${size}":`, variationError);
-    }
+  // Check if the slug is a custom size
+  if (['Custom Size (+40)', 'Custom Size (+$40)'].includes(size)) {
+    regularPrice += 40;         // 205 + 40 = 245
+    salePrice = baseRegularPrice; // 205
   }
+
+  const variationData = {
+    regular_price: regularPrice.toFixed(2),
+    sale_price: salePrice.toFixed(2),
+    attributes: [
+      {
+        id: sizeAttribute.id,
+        option: size
+      }
+    ]
+  };
+
+  try {
+    const variationResponse = await axios.post(variationsEndpoint, variationData, {
+      auth: { username: consumerKey, password: consumerSecret },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log(`✅ Variation created for size: ${size}`, variationResponse.data.id);
+  } catch (variationError) {
+    console.error(`❌ Failed to create variation for size "${size}":`, variationError);
+  }
+}
+
 }   
 
     return NextResponse.json({ success: true, productId, message: 'Product and variations created' });
