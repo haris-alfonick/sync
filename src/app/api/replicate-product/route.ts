@@ -12,6 +12,12 @@ interface WCProductAttribute {
   options: string[];
 }
 
+interface WCMetaData {
+  id?: number;
+  key: string;
+  value: any;
+}
+
 export async function POST(req: NextRequest) {
   console.log('✅ Webhook received at:', new Date().toISOString());
 
@@ -37,7 +43,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const originId = product.meta_data?.find((meta: any) => meta.key === 'origin_id')?.value;
+  const originId = (product.meta_data as WCMetaData[])?.find(meta => meta.key === 'origin_id')?.value;
+
   if (!originId) {
     console.error('❌ Missing origin_id in meta_data');
     return NextResponse.json({ error: 'Missing origin_id in meta_data' }, { status: 400 });
