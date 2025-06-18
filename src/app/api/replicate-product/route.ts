@@ -15,7 +15,7 @@ interface WCProductAttribute {
 interface WCMetaData {
   id?: number;
   key: string;
-  value: any;
+  value: string | number | boolean | null;
 }
 
 export async function POST(req: NextRequest) {
