@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const variableProductPayload = {
     name: product.name,
     type: 'variable',
-    status: product.status,
+    status: 'draft',
     description: product.description,
     short_description: product.short_description,
     categories: product.categories,
