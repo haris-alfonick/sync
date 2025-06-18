@@ -27,8 +27,12 @@ export async function POST(req: NextRequest) {
   const wcApiUrl = process.env.WC2_API_URL!;
 
   const signatureHeader = req.headers.get('x-wc-webhook-signature') || req.headers.get('X-WC-Webhook-Signature');
+  
   const rawBody = await req.text();
+  console.log('📦 Raw Body from WooCommerce:\n', rawBody);
   const computedSignature = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64');
+  console.log('🔐 WooCommerce Signature Header:', signatureHeader);
+  console.log('🧮 Computed Signature:', computedSignature);
 
   if (!signatureHeader || signatureHeader !== computedSignature) {
     console.error('❌ Invalid webhook signature');
