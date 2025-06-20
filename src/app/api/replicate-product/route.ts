@@ -58,14 +58,17 @@ export async function POST(req: NextRequest) {
 
   // Check if a product already exists with this origin_id
   try {
-    const existingProductResponse = await axios.get(`${wcApiUrl}?meta_key=origin_id&meta_value=${originId}`, {
-      auth: { username: consumerKey, password: consumerSecret },
-    });
+    const customEndpoint = `https://americanfilmoutfits.com/wp-json/custom/v1/product-by-origin-id/${originId}`;
+    const existingProductResponse = await axios.get(customEndpoint);
 
-    const existingProducts = existingProductResponse.data;
-    if (existingProducts.length > 0) {
-      console.log(`⚠️ Product with origin_id ${originId} already exists (ID: ${existingProducts[0].id}), skipping creation.`);
-      return NextResponse.json({ message: 'Product already exists. Skipping creation.', productId: existingProducts[0].id });
+    const data = existingProductResponse.data;
+    console.log(data)
+    if (data.exists) {
+      console.log(`⚠️ Product with origin_id ${originId} already exists (ID: ${data.product_id}), skipping creation.`);
+      return NextResponse.json({
+        message: 'Product already exists. Skipping creation.',
+        productId: data.product_id,
+      });
     }
   } catch (checkError) {
     console.error('❌ Failed to check existing products:', checkError);
