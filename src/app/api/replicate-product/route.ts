@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const originId = (product.meta_data as WCMetaData[])?.find(meta => meta.key === 'origin_id')?.value;
+  const originId = product.id;
 
   if (!originId) {
     console.error('❌ Missing origin_id in meta_data');
