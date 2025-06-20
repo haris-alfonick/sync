@@ -12,11 +12,11 @@ interface WCProductAttribute {
   options: string[];
 }
 
-interface WCMetaData {
-  id?: number;
-  key: string;
-  value: string | number | boolean | null;
-}
+// interface WCMetaData {
+//   id?: number;
+//   key: string;
+//   value: string | number | boolean | null;
+// }
 
 export async function POST(req: NextRequest) {
   console.log('✅ Webhook received at:', new Date().toISOString());
